@@ -28,16 +28,21 @@ On Direction Change: only direction received
 void BleAdvFan::control(const fan::FanCall &call) {
   bool direction_refresh = false;
   bool oscillation_refresh = false;
-  if (call.get_state().has_value()) {
+  if (call.get_state().has_value() || call.get_speed().has_value()) {
     // State ON/OFF or SPEED changed
-    if (!this->state && *call.get_state()) {
-      // forcing direction / oscillation refresh on 'switch on' if requested
-      direction_refresh |= this->forced_refresh_on_start_;
-      oscillation_refresh |= this->forced_refresh_on_start_;
+    if(call.get_state().has_value()) {
+      if (!this->state && *call.get_state()) {
+        // forcing direction / oscillation refresh on 'switch on' if requested
+        direction_refresh |= this->forced_refresh_on_start_;
+        oscillation_refresh |= this->forced_refresh_on_start_;
+      }
+      this->state = *call.get_state();
     }
-    this->state = *call.get_state();
     if (call.get_speed().has_value()) {
       this->speed = *call.get_speed();
+      if (this->speed > 0 && !call.get_state().has_value()) {
+        this->state = true;
+      }
     }
     if (this->state) {
       // Switch ON, always setting with SPEED
